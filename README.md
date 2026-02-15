@@ -1,17 +1,16 @@
 # Sentinel Bridge (Agent Proxy)
 
-**Sentinel Bridge** is a lightweight, asynchronous Python middleware built with **Starlette** and **Uvicorn**. It acts as a secure gateway between an AI Agent and a **Spring Boot** backend, enforcing permission controls, logging, and a "kill switch" mechanism.
+**Sentinel Bridge** is a lightweight, asynchronous Python middleware built with **Starlette** and **Uvicorn**. It acts as a secure firewall between an Autonomous AI Agent (via Archestra) and your internal **Spring Boot** backend.
 
-It implements a **JSON-RPC 2.0** style protocol (compatible with Model Context Protocol standards) to handle tool discovery and execution requests.
+It implements a **JSON-RPC 2.0** style protocol (compatible with Model Context Protocol standards) to enforce permission controls, real-time logging, and a "kill switch" mechanism.
 
 ## Features
 
-* **JSON-RPC Interface:** Handles `initialize`, `tools/list`, and `tools/call` methods.
-* **Security Gating:**
-    * **Kill Switch:** Checks the Java backend before every action to see if the agent has been terminated.
-    * **Human-in-the-Loop:** Implements a polling mechanism for `request_permission` tools, waiting for Admin approval via the Java backend.
-* **Async Logging:** Streams agent activity logs directly to the Spring Boot API.
-* **Tool Proxy:** Forwards approved tool calls (like `deploy`, `status`) to the backend for execution.
+* **JSON-RPC Interface:** Handles standard MCP methods: `initialize`, `tools/list`, and `tools/call`.
+* **Security Gating (The Kill Switch):** Checks the Java backend before *every single action* to verify if the agent is active. If the agent is "Killed," execution is blocked immediately.
+* **Human-in-the-Loop:** Implements a polling loop for high-risk tools (like `request_permission`), pausing execution until an Admin physically approves the request via the Android App.
+* **Async Logging:** Streams real-time agent activity logs (`EXECUTING`, `AUTH_REQUIRED`) directly to the Spring Boot API.
+* **Tool Proxy:** securely forwards approved tool calls (like `deploy`, `status`) to the backend.
 
 ## Tech Stack
 
@@ -22,8 +21,8 @@ It implements a **JSON-RPC 2.0** style protocol (compatible with Model Context P
 
 ## Prerequisites
 
-* Python 3.8 or higher.
-* A running instance of the **Spring Boot Backend** at `http://localhost:8080`.
+1.  Python 3.8 or higher.
+2.  A running instance of the **Sentinel Spring Boot Backend** at `http://localhost:8080`.
 
 ## Installation
 
@@ -47,30 +46,40 @@ It implements a **JSON-RPC 2.0** style protocol (compatible with Model Context P
 
 3.  **Install dependencies:**
     ```bash
-    pip install -r requirements.txt
+    pip install uvicorn starlette httpx
     ```
 
-    > **Note:** If `requirements.txt` is missing, install the core packages manually:
-    > `pip install uvicorn starlette httpx`
+## Configuration (Connecting to Archestra)
+
+To make the AI Agent use this bridge, you must register it as an **MCP Server** in Archestra.
+
+1.  Open **Archestra**.
+2.  Go to **Settings** -> **MCP Gateways** (or Tool Registries).
+3.  Click **"Add New Server"**.
+4.  Enter the following details:
+    * **Name:** `Sentinel-Bridge`
+    * **URL:** `http://localhost:9095` (or `http://host.docker.internal:9095` if running in Docker).
+    * **Type:** `SSE` (Server-Sent Events) or `HTTP` depending on your version.
+5.  **Enable the Tools:** Go to your Agent's configuration and toggle "Sentinel-Bridge" tools to **ON**.
 
 ## Usage
 
-1.  Ensure your Java Spring Boot backend is running on port `8080`.
-2.  Start the Python Sentinel Bridge:
+1.  **Ensure Backend is Running:**
+    Make sure your Spring Boot API is active on port `8080`.
 
+2.  **Start the Bridge:**
     ```bash
-    python rogue_agent.py
+    python bridge.py
     ```
 
-3.  The server will start on:
-    `http://0.0.0.0:9095`
+    You should see:
+    > 🚀 SENTINEL BRIDGE RUNNING on http://0.0.0.0:9095
 
-## API Protocol
+## 🔌 API Protocol
 
-The bridge listens for **POST** requests containing JSON-RPC payloads.
+The bridge listens for `POST` requests containing JSON-RPC payloads.
 
-### 1. Initialize
-**Request:**
+**Example 1: Initialize Handshake**
 ```json
 {
   "jsonrpc": "2.0",

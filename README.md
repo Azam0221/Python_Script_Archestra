@@ -28,8 +28,7 @@ It implements a **JSON-RPC 2.0** style protocol (compatible with Model Context P
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/Azam0221/Python_Script_Archestra.git](https://github.com/Azam0221/Python_Script_Archestra.git)
-    cd Safe_Agent
+    git clone https://github.com/Azam0221/Python_Script_Archestra.git
     ```
 
 2.  **Create and activate a virtual environment:**
